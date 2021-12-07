@@ -58,4 +58,14 @@ WHERE employe.tauxcom IS NOT NULL;
 FROM employe
 WHERE employe.tauxcom IS NOT NULL
 ORDER BY employe.tauxcom;
-28. 
+28. SELECT CONCAT(employe.nom, ' ', employe.prenom) AS Emloye
+FROM employe;
+29. SELECT SUBSTRING(employe.nom, 1,5 ) AS 'les 5 premiéres letters du nom'
+FROM employe;
+30. SELECT employe.nom, LOCATE('r', employe.nom) AS 'rang de la lettre "r"'
+FROM employe;
+31. SELECT UPPER(employe.nom) AS 'majuscule', LOWER(employe.nom) AS 'minuscule'
+FROM employe
+WHERE employe.nom = 'Vrante';
+32. SELECT employe.nom, LENGTH(employe.nom) AS 'nombre de caractères'
+FROM employe;
