@@ -101,16 +101,16 @@ WHERE vente.prix1 <
 	ON produit.codart = vente.codart 
 	WHERE produit.libart LIKE 'r%');
 
-/*15.*/
+/*15.?
 SELECT vente.numfou
 FROM vente
 JOIN produit
 ON vente.codart = produit.codart
 WHERE produit.stkphy <= 1.5*produit.stkale
 ORDER BY produit.codart;
-/*ORDER BY vente.codart*/
+ORDER BY vente.codart*/
 
-/*16.*/
+/*15.*/
 SELECT fournis.numfou
 FROM fournis
 JOIN entcom
@@ -123,7 +123,7 @@ WHERE produit.stkphy <= 1.5*produit.stkale
 ORDER BY fournis.numfou;
 /*ORDER BY produit.codart*/
 
-/*17.*/
+/*16.*/
 SELECT fournis.numfou FROM fournis
 JOIN entcom
 ON fournis.numfou = entcom.numfou
@@ -136,7 +136,7 @@ AND (ligcom.derliv - entcom.datcom) <=30
 ORDER BY fournis.numfou;
 /*ORDER BY produit.codart*/
 
-/*18.*/
+/*17.*/
 SELECT fournis.numfou, produit.stkphy FROM fournis
 JOIN entcom
 ON fournis.numfou = entcom.numfou
@@ -146,7 +146,7 @@ JOIN produit
 ON ligcom.codart = produit.codart
 ORDER BY produit.stkphy DESC;
 
-/*19.*/
+/*18.*/
 SELECT produit.codart FROM produit
 JOIN ligcom
 ON produit.codart = ligcom.codart
