@@ -161,7 +161,7 @@ WHERE vente.numfou = '9180';
 
 /*2.*/
 UPDATE vente 
-SET vente.prix2 = 0.98*vente.prix1 
+SET vente.prix2 = vente.prix1
 WHERE vente.prix2 = 0;
 
 /*3.*/
@@ -172,6 +172,8 @@ SET entcom.obscom = '*****'
 WHERE fournis.satisf < 5;
 
 /*4.*/
-DELETE 
-FROM produit 
+DELETE
+FROM produit
 WHERE produit.codart = 'I110';
+
+/*5. Suppression des entête de commande qui n'ont aucune ligne */
