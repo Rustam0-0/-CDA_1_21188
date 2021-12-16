@@ -37,6 +37,7 @@ SELECT entcom.numcom
 FROM entcom
 WHERE MONTH(entcom.datcom) = 4
 OR MONTH(entcom.datcom) = 3;
+/* WHERE MONTH(entcom.datcom) BETWEEN 3 AND 4; */
 
 /*7.*/
 SELECT entcom.numcom, entcom.datcom
