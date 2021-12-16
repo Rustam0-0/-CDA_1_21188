@@ -46,3 +46,92 @@ GROUP BY
     customers.CompanyName
 HAVING
     COUNT(orders.OrderID) > 10;
+
+-- 5 - Liste des clients ayant un chiffre d’affaires > 30.000
+SELECT
+    customers.CompanyName 'Client',
+    SUM(
+        order_details.UnitPrice * order_details.Quantity
+    ) 'CA',
+    customers.Country 'Pays'
+FROM
+    customers
+JOIN orders ON customers.CustomerID = orders.CustomerID
+JOIN order_details ON order_details.OrderID = orders.OrderID
+GROUP BY
+    customers.CompanyName
+HAVING
+    SUM(
+        order_details.UnitPrice * order_details.Quantity
+    ) > 30000
+ORDER BY
+    SUM(
+        order_details.UnitPrice * order_details.Quantity
+    )
+DESC;
+
+-- 6 – Liste des pays dont les clients ont passé commande de produits fournis par «Exotic Liquids»
+SELECT
+    DISTINCT customers.Country 'Pays'
+FROM
+    customers
+JOIN orders ON orders.CustomerID = customers.CustomerID
+JOIN order_details ON order_details.OrderID = orders.OrderID
+JOIN products ON products.ProductID = order_details.ProductID
+JOIN suppliers ON suppliers.SupplierID = products.SupplierID
+WHERE
+    suppliers.CompanyName = 'Exotic Liquids'
+ORDER BY
+    customers.Country;
+
+-- 7 – Montant des ventes de 1997
+SELECT
+    SUM(
+        order_details.Quantity * order_details.UnitPrice
+    ) 'Montant Ventes 97'
+FROM
+    order_details
+JOIN orders ON order_details.OrderID = orders.OrderID
+WHERE
+    YEAR(orders.OrderDate) = 1997;
+
+-- 8 –  Montant des ventes de 1997 mois par mois
+SELECT
+    MONTH(orders.OrderDate) 'Mois 97',
+    SUM(
+        order_details.Quantity * order_details.UnitPrice
+    ) 'Montant Ventes'
+FROM
+    orders
+JOIN order_details ON order_details.OrderID = orders.OrderID
+WHERE
+    YEAR(orders.OrderDate) = 1997
+GROUP BY
+    MONTH(orders.OrderDate);
+
+-- 9 – Depuis quelle date le client « Du monde entier » n’a plus commandé ? 
+SELECT
+    orders.OrderDate 'Date de dernière commande'
+FROM
+    orders
+JOIN customers ON orders.CustomerID = customers.CustomerID
+WHERE
+    customers.CompanyName = 'Du monde entier'
+ORDER BY
+    OrderDate
+DESC
+LIMIT 1;
+
+-- 10 – Quel est le délai moyen de livraison en jours ?
+SELECT
+    ROUND(
+        AVG(
+            DATEDIFF(
+                orders.ShippedDate,
+                orders.OrderDate
+            )
+        ),
+        0
+    ) 'Délai moyen de livraison en jours'
+FROM
+    orders;
