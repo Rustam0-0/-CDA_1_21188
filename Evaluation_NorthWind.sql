@@ -1,3 +1,5 @@
+-- 1) Requêtes d'intérrogation sur la base NorthWind
+
 -- 1 - Liste des contacts français
 SELECT
     customers.CompanyName 'Société',
@@ -6,8 +8,9 @@ SELECT
     customers.Phone 'Téléphone'
 FROM
     customers
-WHERE
-    customers.Country = 'France';
+WHERE customers.Country = 'France';
+
+
 
 -- 2 - Produits vendus par le fournisseur « Exotic Liquids »
 SELECT
@@ -16,8 +19,9 @@ SELECT
 FROM
     products
 JOIN suppliers ON products.SupplierID = suppliers.SupplierID
-WHERE
-    suppliers.CompanyName = 'Exotic Liquids';
+WHERE suppliers.CompanyName = 'Exotic Liquids';
+
+
 
 -- 3 - Nombre de produits vendus par les fournisseurs Français dans l’ordre décroissant
 SELECT DISTINCT
@@ -33,6 +37,8 @@ GROUP BY
     suppliers.CompanyName
 ORDER BY COUNT(DISTINCT order_details.ProductID) DESC;
 
+
+
 -- 4 - Liste des clients Français ayant plus de 10 commandes
 SELECT
     customers.CompanyName 'Client',
@@ -44,8 +50,9 @@ WHERE
     customers.Country = 'France'
 GROUP BY
     customers.CompanyName
-HAVING
-    COUNT(orders.OrderID) > 10;
+HAVING COUNT(orders.OrderID) > 10;
+
+
 
 -- 5 - Liste des clients ayant un chiffre d’affaires > 30.000
 SELECT
@@ -70,6 +77,8 @@ ORDER BY
     )
 DESC;
 
+
+
 -- 6 – Liste des pays dont les clients ont passé commande de produits fournis par «Exotic Liquids»
 SELECT
     DISTINCT customers.Country 'Pays'
@@ -81,8 +90,9 @@ JOIN products ON products.ProductID = order_details.ProductID
 JOIN suppliers ON suppliers.SupplierID = products.SupplierID
 WHERE
     suppliers.CompanyName = 'Exotic Liquids'
-ORDER BY
-    customers.Country;
+ORDER BY customers.Country;
+
+
 
 -- 7 – Montant des ventes de 1997
 SELECT
@@ -92,8 +102,9 @@ SELECT
 FROM
     order_details
 JOIN orders ON order_details.OrderID = orders.OrderID
-WHERE
-    YEAR(orders.OrderDate) = 1997;
+WHERE YEAR(orders.OrderDate) = 1997;
+
+
 
 -- 8 –  Montant des ventes de 1997 mois par mois
 SELECT
@@ -106,8 +117,8 @@ FROM
 JOIN order_details ON order_details.OrderID = orders.OrderID
 WHERE
     YEAR(orders.OrderDate) = 1997
-GROUP BY
-    MONTH(orders.OrderDate);
+GROUP BY MONTH(orders.OrderDate);
+
 
 -- 9 – Depuis quelle date le client « Du monde entier » n’a plus commandé ? 
 SELECT
@@ -122,6 +133,7 @@ ORDER BY
 DESC
 LIMIT 1;
 
+
 -- 10 – Quel est le délai moyen de livraison en jours ?
 SELECT
     ROUND(
@@ -133,5 +145,78 @@ SELECT
         ),
         0
     ) 'Délai moyen de livraison en jours'
+FROM orders;
+
+
+
+-- 2) Procédures stockées
+
+-- Depuis quelle date le client «  » n’a plus commandé ?
+-- requête 9
+DELIMITER |
+CREATE PROCEDURE Dern_commande(IN cli VARCHAR(40))
+BEGIN
+SELECT
+    orders.OrderDate 'Date de dernière commande'
 FROM
-    orders;
+    orders
+JOIN customers ON orders.CustomerID = customers.CustomerID
+WHERE
+    customers.CompanyName LIKE cli
+ORDER BY
+    OrderDate
+DESC
+LIMIT 1;
+END |
+DELIMITER ;
+
+CALL Dern_commande("");
+
+SHOW CREATE PROCEDURE Dern_commande;
+
+
+-- requête 10
+DELIMITER |
+CREATE PROCEDURE time_limit()
+BEGIN
+SELECT
+    ROUND(
+        AVG(
+            DATEDIFF(
+                orders.ShippedDate,
+                orders.OrderDate
+            )
+        ),
+        0
+    ) 'Délai moyen de livraison en jours'
+FROM orders;
+END |
+DELIMITER ;
+
+CALL time_limit();
+
+
+
+--3) Mise en place d'une règle de gestion
+DELIMITER $$
+CREATE TRIGGER before_insert_order_details
+BEFORE INSERT 
+ON order_details
+FOR EACH ROW
+BEGIN
+    DECLARE same_country int;
+    SET same_country = (SELECT suppliers.SupplierID
+        FROM order_details
+        JOIN orders ON orders.`OrderID` = order_details.OrderID
+        JOIN customers ON customers.CustomerID = orders.CustomerID
+        JOIN products ON products.ProductID = order_details.ProductID
+        JOIN suppliers ON suppliers.SupplierID = products.SupplierID
+        WHERE suppliers.Country = customers.Country
+            AND order_details.ProductID = NEW.ProductID 
+            AND order_details.OrderID = NEW.OrderID);
+        IF same_country IS NULL
+        THEN
+        SIGNAL SQLSTATE '40000' SET MESSAGE_TEXT = 'pays vendeur et client correspondre pas!';
+    END IF;
+END $$
+DELIMITER ;
