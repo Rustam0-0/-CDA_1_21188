@@ -5,84 +5,113 @@ SELECT entcom.numcom  FROM entcom
 WHERE entcom.numfou = '9120';
 
 /*2.*/
-SELECT DISTINCT fournis.numfou FROM fournis
-JOIN entcom
-ON fournis.numfou = entcom.numfou;
+SELECT DISTINCT fournis.numfou FROM entcom;
 
-/*3.*/
-SELECT COUNT(entcom.numcom)'le nombre de commandes',
+/*3. Afficher le nombre de commandes fournisseurs passées, et 
+ le nombre de fournisseur concernés*/
+SELECT COUNT(*)'le nombre de commandes',
 COUNT(fournis.numfou)' le nombre de fournisseurs'
-FROM entcom
-JOIN fournis
-ON fournis.numfou = entcom.numfou;
+FROM entcom;
 
-/*4.*/
-SELECT produit.codart, produit.libart, produit.stkphy, produit.stkale, produit.qteann
+/*4. Editer (comprendre afficher)  les produits ayant un stock 
+-- inférieur ou égal au 
+-- stock d'alerte et dont la quantité annuelle est inférieur 
+--  à 1000 (informations à fournir : n° produit, 
+-- libellé produit, stock, stock actuel d'alerte, quantité annuelle)*/
+SELECT *
 FROM produit
 WHERE produit.stkphy <= produit.stkale
 AND produit.qteann < 1000;
 
-/*5.*/
+/*5. Quels sont les fournisseurs situés dans les départements 
+-- 75 78 92 77 ?
+-- L’affichage (département, nom fournisseur) sera effectué par
+-- département décroissant, puis par ordre alphabétique*/
 SELECT fournis.posfou, fournis.nomfou
 FROM fournis
 WHERE fournis.posfou LIKE '75%'
 	OR fournis.posfou LIKE '78%'
 	OR fournis.posfou LIKE '92%'
 	OR fournis.posfou LIKE '77%'
-ORDER BY fournis.posfou DESC;
-/*ORDER BY fournis.nomfou*/
+ORDER BY fournis.posfou DESC, fournis.nomfou ASC;
 
-/*6.*/
+/*ou*/
+SELECT * FROM fournis
+WHERE SUBSTRING(posfou, 1, 2) in (75, 78, 92, 77)
+ORDER BY fournis.posfou DESC, fournis.nomfou ASC;
+
+/*6. Quelles sont les commandes passées au mois de mars et avril ?*/
 SELECT entcom.numcom
 FROM entcom
 WHERE MONTH(entcom.datcom) = 4
 OR MONTH(entcom.datcom) = 3;
 /* WHERE MONTH(entcom.datcom) BETWEEN 3 AND 4; */
 
-/*7.*/
+/*7. Quelles sont les commandes du jour qui ont des observations
+-- particulières ?
+-- (Affichage numéro de commande, date de commande)*/
 SELECT entcom.numcom, entcom.datcom
 FROM entcom
-WHERE entcom.obscom <> '';
+WHERE date(datcom) = date(now()) 
+AND entcom.obscom <> '';
 
-/*8.*/
-SELECT ligcom.numcom, ligcom.qtecde*ligcom.priuni AS total
+/*8. Lister le total de chaque commande par total décroissant
+-- (Affichage numéro de commande et total)*/
+SELECT ligcom.numcom, SUM(ligcom.qtecde*ligcom.priuni) AS total
 FROM ligcom
-ORDER BY ligcom.qtecde*ligcom.priuni DESC;
+GROUP by 1
+ORDER BY 2 DESC;
 
-/*9.*/
-SELECT ligcom.numcom, ligcom.qtecde*ligcom.priuni AS total
+/*9.  Lister les commandes dont le total est supérieur à 10 000€ ; on exclura
+-- dans le calcul du total les articles commandés en quantité supérieure
+-- ou égale à 1000.
+-- (Affichage numéro de commande et total)*/
+SELECT ligcom.numcom, SUM(ligcom.qtecde*ligcom.priuni) AS total
 FROM ligcom
-WHERE ligcom.qtecde*ligcom.priuni > 10000
-AND ligcom.qtecde < 1000;
+WHERE ligcom.qtecde >= 1000
+GROUP BY ligcom.numcom
+HAVING total > 10000
+ORDER BY 2 DESC;
 
-/*10.*/
+/*10. Lister les commandes par nom fournisseur
+-- (Afficher le nom du fournisseur, le numéro de commande et 
+-- la date)*/
 SELECT fournis.nomfou, entcom.numcom, entcom.datcom
 FROM fournis
-JOIN entcom
-ON fournis.numfou = entcom.numfou
-ORDER BY fournis.nomfou;
+NATURAL JOIN entcom
+ORDER BY fournis.nomfou
 
-/*11.*/
-SELECT entcom.numcom, fournis.nomfou, produit.libart, ligcom.priuni*ligcom.qtecde AS total 
-FROM entcom
-JOIN fournis
-ON fournis.numfou = entcom.numfou
-JOIN ligcom
-ON ligcom.numcom = entcom.numcom
-JOIN produit
-ON ligcom.codart = produit.codart
-WHERE entcom.obscom = 'Commande urgente';
+/*11. Sortir les produits des commandes ayant le mot "urgent' en observation?
+-- (Afficher le numéro de commande, le nom du fournisseur, le libellé du
+-- produit et le sous total = quantité commandée * Prix unitaire)*/
+SELECT e.numcom, f.nomfou, p.libart, l.priuni*l.qtecde AS total 
+FROM entcom e
+JOIN fournis f using(numfou)
+JOIN ligcom l using(numcom)
+JOIN produit p using(codart)
+WHERE e.obscom LIKE '%urgent%';
 
-/*12.*/
-SELECT entcom.numfou 
-FROM entcom
-WHERE entcom.numcom != 0;
+/*12. Coder de 2 manières différentes la requête suivante :
+Lister le nom des fournisseurs susceptibles de livrer au moins un article */
+SELECT DISTINCT fournis.nomfou 
+FROM ligcom
+JOIN entcom using(numcom)
+JOIN fournis using(numfou)
+WHERE ligcom.qtecde > ligcom.qteliv
+
 /* ou*/
-SELECT entcom.numfou
-FROM entcom
-WHERE entcom.numcom <> '';
+SELECT nomfou FROM fournis
+WHERE nomfou IN (
+	SELECT numfou FROM entcom
+	WHERE numcom IN (
+		SELECT numcom FROM ligcom
+		WHERE qtecde > qteliv
+	)
+);
 
-/*13.*/
+/*13. Coder de 2 manières différentes la requête suivante
+Lister les commandes (Numéro et date) dont le fournisseur est celui de
+la commande 70210 */
 SELECT entcom.numcom, entcom.datcom
 FROM entcom
 WHERE entcom.numfou = (
@@ -90,68 +119,88 @@ WHERE entcom.numfou = (
 	FROM entcom
 	WHERE entcom.numcom = 70210);
 
-/*14.*/
-SELECT produit.libart, vente.prix1 
-FROM produit
-JOIN vente
-ON produit.codart = vente.codart
+/* ou */
+SELECT e.numcom, e.datcom
+FROM entcom e
+JOIN entcom e2 USING (numfou)
+WHERE e2.numcom = 70210
+
+/*14. Dans les articles susceptibles d’être vendus, 
+-- lister les articles moins chers (basés sur Prix1) 
+-- que le moins cher des rubans (article dont le premier 
+-- caractère commence par R). 
+-- On affichera le libellé de l’article et prix1*/
+SELECT vente.codart, vente.prix1 
+FROM vente
 WHERE vente.prix1 < 
 	(SELECT MIN(vente.prix1) 
 	FROM vente 
-	JOIN produit 
-	ON produit.codart = vente.codart 
-	WHERE produit.libart LIKE 'r%');
+	WHERE vente.codart LIKE 'r%')
 
-/*15.?
-SELECT vente.numfou
-FROM vente
-JOIN produit
-ON vente.codart = produit.codart
-WHERE produit.stkphy <= 1.5*produit.stkale
-ORDER BY produit.codart;
-ORDER BY vente.codart*/
+/*15. Afficher la liste des fournisseurs susceptibles de livrer 
+-- les produits dont le stock est inférieur ou égal à 150 % du 
+-- stock d'alerte. La liste est triée par produit puis fournisseur*/
+SELECT fournis.numfou, stkphy, stkale*1.5
+FROM fournis f
+JOIN entcom e USING (numfou)
+JOIN ligcom l USING (numcom)
+JOIN produit p USING (codart)
+WHERE p.stkphy <= 1.5*p.stkale
+	AND 
+	l.qtecde > l.qteliv 
+ORDER BY p.codart, f.numfou
 
-/*15.*/
-SELECT fournis.numfou
-FROM fournis
-JOIN entcom
-ON fournis.numfou = entcom.numfou
-JOIN ligcom
-ON entcom.numcom = ligcom.numcom
-JOIN produit
-ON ligcom.codart = produit.codart
-WHERE produit.stkphy <= 1.5*produit.stkale
-ORDER BY fournis.numfou;
-/*ORDER BY produit.codart*/
-
-/*16.*/
+/*16. Éditer la liste des fournisseurs susceptibles de livrer les 
+-- produit dont le stock est inférieur ou égal à 150 % du stock 
+-- d'alerte et un délai de livraison d'au plus 30 jours. 
+-- La liste est triée par fournisseur puis produit*/
 SELECT fournis.numfou FROM fournis
-JOIN entcom
-ON fournis.numfou = entcom.numfou
-JOIN ligcom
-ON entcom.numcom = ligcom.numcom
-JOIN produit
-ON ligcom.codart = produit.codart
-WHERE produit.stkphy <= 1.5*produit.stkale
-AND (ligcom.derliv - entcom.datcom) <=30
-ORDER BY fournis.numfou;
-/*ORDER BY produit.codart*/
+JOIN entcom e USING (numfou)
+JOIN ligcom l USING (numcom)
+JOIN produit p USING (codart)
+WHERE p.stkphy <= 1.5*p.stkale
+AND (l.derliv - e.datcom) <=30
+AND l.qtecde > l.qteliv
+ORDER BY fournis.numfou, p.codart;
 
-/*17.*/
-SELECT fournis.numfou, produit.stkphy FROM fournis
-JOIN entcom
-ON fournis.numfou = entcom.numfou
-JOIN ligcom
-ON entcom.numcom = ligcom.numcom
-JOIN produit
-ON ligcom.codart = produit.codart
-ORDER BY produit.stkphy DESC;
+/*17. Avec le même type de sélection que ci-dessus, sortir 
+-- un total des stocks par fournisseur trié par total décroissant*/
+SELECT f.numfou, SUM(produit.stkphy) 
+FROM fournis f
+JOIN entcom USING (numfou)
+JOIN ligcom USING (numcom)
+JOIN produit USING (codart)
+GROUP BY f.numfou
+ORDER BY 2 DESC;
 
-/*18.*/
-SELECT produit.codart FROM produit
-JOIN ligcom
-ON produit.codart = ligcom.codart
-WHERE ligcom.qtecde > 0.9*produit.qteann;
+/*18. En fin d'année, sortir la liste des produits dont la quantité réellement
+commandée dépasse 90% de la quantité annuelle prévue. */
+SELECT p.codart, SUM(l.qtecde), p.qteann*0.9 AS total
+FROM produit p
+JOIN ligcom l USING(codart)
+GROUP BY codart
+HAVING sum(l.qtecde) > total;
+
+/* 19. Calculer le chiffre d'affaire par fournisseur pour l'année 2018 sachant
+que les prix indiqués sont hors taxes et que le taux de TVA est 20%.*/
+SELECT f.nomfou, 
+	SUM(l.priuni*l.qtecde) AS "chiffre d'affaire hors txes",
+	SUM(l.priuni*l.qtecde)*0.2 AS "TVA",
+	SUM(l.priuni*l.qtecde)*1.2 AS "chiffre d'affaire TTC"
+FROM ligcom l
+JOIN entcom e USING(numcom)
+JOIN fournis f USING(numfou)
+GROUP BY f.nomfou
+ORDER BY 2 DESC;
+
+/* 20. Existe-t-il des lignes de commande non cohérentes avec 
+les produits vendus par les fournisseurs? */
+SELECT l.codart, e.numfou
+FROM ligcom l
+JOIN entcom e USING(numcom)
+EXCEPT
+SELECT codart, numfou FROM vente;
+
 
 
 /*LES BESOINS DE MISE A JOUR*/
