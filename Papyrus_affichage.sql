@@ -154,14 +154,15 @@ ORDER BY p.codart, f.numfou
 -- produit dont le stock est inférieur ou égal à 150 % du stock 
 -- d'alerte et un délai de livraison d'au plus 30 jours. 
 -- La liste est triée par fournisseur puis produit*/
-SELECT fournis.numfou FROM fournis
-JOIN entcom e USING (numfou)
-JOIN ligcom l USING (numcom)
-JOIN produit p USING (codart)
+SELECT f.numfou
+FROM produit p
+JOIN ligcom l USING (codart)
+JOIN entcom e USING (numcom)
+JOIN fournis f USING (numfou)
+JOIN vente v ON v.codart = p.codart AND v.numfou = f.numfou
 WHERE p.stkphy <= 1.5*p.stkale
-AND (l.derliv - e.datcom) <=30
-AND l.qtecde > l.qteliv
-ORDER BY fournis.numfou, p.codart;
+AND v.delliv < 30
+AND l.qtecde > l.qteliv;
 
 /*17. Avec le même type de sélection que ci-dessus, sortir 
 -- un total des stocks par fournisseur trié par total décroissant*/
